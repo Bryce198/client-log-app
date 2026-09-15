@@ -1,8 +1,7 @@
 from pydantic import BaseModel
 from datetime import date
 
-class Client(BaseModel):
-    id: int
+class ClientCreate(BaseModel):
     first_name: str
     last_name: str
     age: int
@@ -13,5 +12,8 @@ class Client(BaseModel):
     created_at: date
     created_by: str
     parent_info: str
+
+class Client(ClientCreate):
+    id: int
 
     

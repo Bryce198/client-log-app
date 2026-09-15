@@ -2,7 +2,7 @@ from fastapi import FastAPI, status, HTTPException, Response
 from pydantic import BaseModel
 from fastapi.params import Body
 from datetime import date
-from thealth_client_app.models.client import Client
+from thealth_client_app.models.client import ClientCreate, Client
 from thealth_client_app.models.employee import Employee
 from thealth_client_app.models.interactions import Interaction
 from thealth_client_app.logic.find_client import find_client, find_client_index
@@ -67,7 +67,7 @@ def get_clients():
 
 
 @app.post("/clients", status_code=status.HTTP_201_CREATED)
-def add_client(client: Client):
+def add_client(client: ClientCreate):
     cursor.execute("""INSERT INTO clients (first_name, last_name, age, date_of_birth, phone_number, email, status, created_at, created_by, parent_info)
     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *""", 
     (client.first_name, client.last_name, client.age, client.date_of_birth, client.phone_number, client.email,
@@ -79,31 +79,36 @@ def add_client(client: Client):
     return {"New Client": new_client}
 
 @app.get("/clients/{id}", status_code=status.HTTP_200_OK)
-def get_client(id: int):
-    client = find_client(id, clients)
-
+def get_client(client_id: int):
+    cursor.execute("""SELECT * FROM clients WHERE id = %s""", (client_id,))
+    client = cursor.fetchone()
     if client is None:
-        raise HTTPException(status_code= 404, detail= f"Client with ID: {id} not found")
+        raise HTTPException(status_code= 404, detail= f"Client with ID: {client_id} not found")
 
     return {"Client Info": client}
 
 @app.delete("/clients/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def remove_client(id: int):
-    client = delete_client(id, clients)
+def remove_client(client_id: int):
+    cursor.execute("""DELETE FROM clients WHERE id = %s RETURNING *""", (client_id,))
+    client = cursor.fetchone()
+    conn.commit()
 
     if client is None:
-        raise HTTPException(status_code= 404, detail=f"Client with ID: {id} not found")
+        raise HTTPException(status_code= 404, detail=f"Client with ID: {client_id} not found")
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @app.put("/clients/{id}", status_code=status.HTTP_200_OK)
-def update_client(id: int, client: Client):
-    client_index = find_client_index(id, clients)
+def update_client(client_id: int, client: ClientCreate):
+    cursor.execute("""UPDATE clients SET first_name = %s, last_name = %s, age = %s, date_of_birth = %s, phone_number = %s, email = %s,
+    status = %s, created_at = %s, created_by = %s, parent_info = %s WHERE id = %s RETURNING *""",
+    (client.first_name, client.last_name, client.age, client.date_of_birth, client.phone_number,
+     client.email, client.status, client.created_at, client.created_by, client.parent_info, client_id))
 
-    if client_index is None:
+    updated_client = cursor.fetchone
+    conn.commit()
+
+    if updated_client is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Client with ID: {id} not found")
 
-    client.id = id
-    clients[client_index] = client
-
-    return {"Updated Client": client}
+    return {"Updated Client": updated_client}
