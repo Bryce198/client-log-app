@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from datetime import date
 
 class ClientCreate(BaseModel):
@@ -7,7 +7,7 @@ class ClientCreate(BaseModel):
     age: int
     date_of_birth: date
     phone_number: str
-    email: str
+    email: EmailStr
     status: str
     created_at: date
     created_by: str
