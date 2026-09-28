@@ -1,6 +1,9 @@
 from pydantic import BaseModel, EmailStr
 from datetime import date
+from uuid import UUID
 
+#This is the client model for my app. it includes all of the
+#fields that are required and need to be tracked by our team.
 class ClientCreate(BaseModel):
     first_name: str
     last_name: str
