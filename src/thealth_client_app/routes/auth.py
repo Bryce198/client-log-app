@@ -11,7 +11,7 @@ router = APIRouter(
     tags=['authentication'])
 
 @router.post("/", response_model=Token)
-def login_employee(employee_credentials: Annotated[OAuth2PasswordRequestForm, Depends()], conn = Depends(get_database)):
+def login(employee_credentials: Annotated[OAuth2PasswordRequestForm, Depends()], conn = Depends(get_database)):
     with conn.cursor() as cursor:
         cursor.execute("""SELECT id, first_name, last_name, email, role, password FROM employees WHERE email = %s""",
                        (employee_credentials.username,))

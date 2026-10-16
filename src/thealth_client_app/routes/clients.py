@@ -13,20 +13,20 @@ router = APIRouter(
 
 
 @router.get("/", status_code=status.HTTP_200_OK)
-def get_clients(conn = Depends(get_database), current_user: TokenData = Depends(oauth2.get_current_user)):
+def get_clients(conn = Depends(get_database), current_user: TokenData = Depends(oauth2.get_current_user), current_employee = Depends()):
     with conn.cursor() as cursor:
         cursor.execute("""SELECT * FROM clients""")
 
         return cursor.fetchall()
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
-def add_client(client: ClientCreate, conn = Depends(get_database), current_user: TokenData = Depends(oauth2.get_current_user)):
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=Client)
+def add_client(client: ClientCreate, conn = Depends(get_database), current_user: TokenData = Depends(oauth2.get_current_user), current_employee: dict = Depends(oauth2.get_current_user)):
     with conn.cursor() as cursor:
-        cursor.execute("""INSERT INTO clients (first_name, last_name, age, date_of_birth, phone_number, email, status, created_at, parent_info)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *""", 
+        cursor.execute("""INSERT INTO clients (first_name, last_name, age, date_of_birth, phone_number, email, status, created_at, parent_info, employee_id)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *""", 
         (client.first_name, client.last_name, client.age, client.date_of_birth, client.phone_number, client.email,
-        client.status, client.created_at, client.parent_info))
+        client.status, client.created_at, client.parent_info, current_employee['id']))
 
         new_client = cursor.fetchone()
     conn.commit()
@@ -41,8 +41,8 @@ def get_client(client_id: int, conn = Depends(get_database), current_user: Token
         client = cursor.fetchone()
 
     if client is None:
-        raise HTTPException(status_code= 404, 
-                            detail= f"Client with ID: {client_id} not found")
+        raise HTTPException(status_code=404, 
+                            detail=f"Client with ID: {client_id} not found")
 
     return client
 

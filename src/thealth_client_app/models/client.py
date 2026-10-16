@@ -17,5 +17,6 @@ class ClientCreate(BaseModel):
 
 class Client(ClientCreate):
     id: UUID
+    employee_id: UUID
 
     
