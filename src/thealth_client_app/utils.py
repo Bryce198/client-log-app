@@ -8,5 +8,7 @@ pwd_context = PasswordHash.recommended()
 def hash_pass(pw: str):
     return pwd_context.hash(pw)
 
+#This function verifies that the entered password credential matches
+#the hashed password stored in the database.
 def verify_pass(plain_pass: str, hashed_pass: str):
     return pwd_context.verify(plain_pass, hashed_pass)

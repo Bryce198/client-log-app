@@ -11,3 +11,4 @@ wheels/
 
 # Sensitive data
 password_user.py
+.env

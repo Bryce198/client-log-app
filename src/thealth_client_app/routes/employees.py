@@ -26,7 +26,8 @@ def create_employee(employee: EmployeeCreate, conn = Depends(get_database)):
         conn.commit()
 
     if created_employee is None:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Employee could not be created.")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                            detail="Employee could not be created.")
 
     return created_employee
 
@@ -38,7 +39,8 @@ def show_employee(employee_id: int, conn = Depends(get_database)):
         employee = cursor.fetchone()
 
     if employee is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Employee with the ID: {employee_id} was not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                            detail=f"Employee with the ID: {employee_id} was not found.")
 
     return employee
 
@@ -50,7 +52,8 @@ def show_employees(conn = Depends(get_database)):
         employees = cursor.fetchall()
 
     if employees is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="There are no employees yet")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                            detail="There are no employees yet")
     
     return employees
 
@@ -65,7 +68,8 @@ def update_employee(employee_id: int, employee: EmployeeUpdate, conn = Depends(g
         conn.commit()
 
     if updated_employee is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Error, employee with ID: {employee_id} was not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                            detail=f"Error, employee with ID: {employee_id} was not found.")
 
     return updated_employee
 
@@ -78,6 +82,7 @@ def delete_employee(employee_id: int, conn = Depends(get_database)):
         employee = cursor.fetchone()
 
     if employee is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Error, employee with ID: {employee_id} was not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                            detail=f"Error, employee with ID: {employee_id} was not found.")
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)

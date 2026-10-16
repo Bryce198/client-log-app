@@ -13,10 +13,9 @@ class ClientCreate(BaseModel):
     email: EmailStr
     status: str
     created_at: date
-    created_by: str
     parent_info: str
 
 class Client(ClientCreate):
-    id: int
+    id: UUID
 
     
