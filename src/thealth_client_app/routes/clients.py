@@ -2,8 +2,10 @@ from fastapi import APIRouter, status, HTTPException, Response, Depends
 from thealth_client_app.models.client import ClientCreate, Client
 from thealth_client_app.database import *
 from thealth_client_app import oauth2
+from ..logic.interaction import log_interaction
 from typing import Annotated
 from thealth_client_app.models.employee import TokenData
+from uuid import UUID
 
 router = APIRouter(
     prefix="/clients",
@@ -29,6 +31,8 @@ def add_client(client: ClientCreate, conn = Depends(get_database), current_user:
         client.status, client.created_at, client.parent_info, current_employee['id']))
 
         new_client = cursor.fetchone()
+
+        log_interaction(cursor, current_employee['id'], new_client['id'], 'Client Created')
     conn.commit()
 
     return new_client
@@ -52,6 +56,8 @@ def remove_client(client_id: int, conn = Depends(get_database), current_user: To
 
         cursor.execute("""DELETE FROM clients WHERE id = %s RETURNING *""", (client_id,))
         client = cursor.fetchone()
+
+        
         conn.commit()
 
     if client is None:
@@ -60,16 +66,18 @@ def remove_client(client_id: int, conn = Depends(get_database), current_user: To
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-@router.put("/{client_id}", status_code=status.HTTP_200_OK)
-def update_client(client_id: int, client: ClientCreate, conn = Depends(get_database), current_user: TokenData = Depends(oauth2.get_current_user)):
+@router.put("/{client_id}", status_code=status.HTTP_200_OK, response_model=Client)
+def update_client(client_id: UUID, client: ClientCreate, conn = Depends(get_database), current_user: TokenData = Depends(oauth2.get_current_user), current_employee = Depends(oauth2.get_current_user)):
     with conn.cursor() as cursor:
 
         cursor.execute("""UPDATE clients SET first_name = %s, last_name = %s, age = %s, date_of_birth = %s, phone_number = %s, email = %s,
-        status = %s, created_at = %s, created_by = %s, parent_info = %s WHERE id = %s RETURNING *""",
+        status = %s, created_at = %s, parent_info = %s WHERE id = %s RETURNING *""",
         (client.first_name, client.last_name, client.age, client.date_of_birth, client.phone_number,
         client.email, client.status, client.created_at, client.parent_info, client_id))
 
-        updated_client = cursor.fetchone
+        updated_client = cursor.fetchone()
+
+        log_interaction(cursor, current_employee['id'], updated_client['id'], 'Client Updated')
         conn.commit()
 
     if updated_client is None:

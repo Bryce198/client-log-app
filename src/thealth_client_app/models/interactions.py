@@ -1,10 +1,8 @@
 from pydantic import BaseModel
 from datetime import datetime
+from uuid import UUID
 
 class Interaction(BaseModel):
-    id: int
-    employee_id: int
-    client_id: int
-    interaction_type: str
-    notes: str
+    employee_id: UUID
+    client_id: UUID
     created_at: datetime

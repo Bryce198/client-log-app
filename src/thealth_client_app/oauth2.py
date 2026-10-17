@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 from thealth_client_app.models.employee import TokenData
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
-from typing import Annotated
 from thealth_client_app import database
 
 load_dotenv()
