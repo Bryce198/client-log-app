@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status, HTTPException, Response
 from fastapi.security import OAuth2PasswordRequestForm
-from thealth_client_app.database import *
+from thealth_client_app.database import get_database
 from thealth_client_app.models.employee import Token
 from thealth_client_app import utils
 from thealth_client_app import oauth2

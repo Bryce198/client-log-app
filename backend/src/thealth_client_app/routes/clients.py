@@ -1,6 +1,6 @@
 from fastapi import APIRouter, status, HTTPException, Response, Depends
 from thealth_client_app.models.client import ClientCreate, Client
-from thealth_client_app.database import *
+from thealth_client_app.database import get_database
 from thealth_client_app import oauth2
 from ..logic.interaction import log_interaction
 from typing import Annotated
@@ -15,7 +15,7 @@ router = APIRouter(
 
 
 @router.get("/", status_code=status.HTTP_200_OK)
-def get_clients(conn = Depends(get_database), current_user: TokenData = Depends(oauth2.get_current_user), current_employee = Depends()):
+def get_clients(conn = Depends(get_database), current_user: TokenData = Depends(oauth2.get_current_user)):
     with conn.cursor() as cursor:
         cursor.execute("""SELECT * FROM clients""")
 
@@ -26,19 +26,19 @@ def get_clients(conn = Depends(get_database), current_user: TokenData = Depends(
 def add_client(client: ClientCreate, conn = Depends(get_database), current_user: TokenData = Depends(oauth2.get_current_user), current_employee: dict = Depends(oauth2.get_current_user)):
     with conn.cursor() as cursor:
         cursor.execute("""INSERT INTO clients (first_name, last_name, age, date_of_birth, phone_number, email, status, created_at, parent_info, employee_id)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *""", 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *""",
         (client.first_name, client.last_name, client.age, client.date_of_birth, client.phone_number, client.email,
         client.status, client.created_at, client.parent_info, current_employee['id']))
 
         new_client = cursor.fetchone()
 
-        log_interaction(cursor, current_employee['id'], new_client['id'], 'Client Created')
+        log_interaction(cursor, current_employee['id'], new_client['id'], f'Client Created by {current_employee['first_name']}')
     conn.commit()
 
     return new_client
 
 @router.get("/{client_id}", status_code=status.HTTP_200_OK)
-def get_client(client_id: int, conn = Depends(get_database), current_user: TokenData = Depends(oauth2.get_current_user)):
+def get_client(client_id: UUID, conn = Depends(get_database), current_user: TokenData = Depends(oauth2.get_current_user)):
     with conn.cursor() as cursor:
 
         cursor.execute("""SELECT * FROM clients WHERE id = %s""", (client_id,))
@@ -51,7 +51,11 @@ def get_client(client_id: int, conn = Depends(get_database), current_user: Token
     return client
 
 @router.delete("/{client_id}", status_code=status.HTTP_204_NO_CONTENT)
-def remove_client(client_id: int, conn = Depends(get_database), current_user: TokenData = Depends(oauth2.get_current_user)):
+def remove_client(client_id: UUID, conn = Depends(get_database), current_user: TokenData = Depends(oauth2.get_current_user), current_employee: dict = Depends(oauth2.get_current_user)):
+    if current_employee['id'] != 'Admin':
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail='You are are not authorized to complete this action. Must be an Admin.')
+    
     with conn.cursor() as cursor:
 
         cursor.execute("""DELETE FROM clients WHERE id = %s RETURNING *""", (client_id,))
@@ -77,7 +81,7 @@ def update_client(client_id: UUID, client: ClientCreate, conn = Depends(get_data
 
         updated_client = cursor.fetchone()
 
-        log_interaction(cursor, current_employee['id'], updated_client['id'], 'Client Updated')
+        log_interaction(cursor, current_employee['id'], updated_client['id'], f'Client Updated by {current_employee['first_name']}')
         conn.commit()
 
     if updated_client is None:

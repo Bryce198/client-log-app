@@ -15,4 +15,4 @@ def get_database():
     try:
         yield conn
     finally:
-        conn.close
+        conn.close()

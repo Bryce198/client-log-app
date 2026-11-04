@@ -1,7 +1,9 @@
-from thealth_client_app.models.employee import EmployeeCreate, EmployeeResponse, EmployeeUpdate
+from thealth_client_app.models.employee import EmployeeCreate, EmployeeResponse, EmployeeUpdate, TokenData
 from fastapi import APIRouter, status, HTTPException, Response, Depends
 from thealth_client_app import utils
-from thealth_client_app.database import *
+from thealth_client_app.database import get_database
+from thealth_client_app import oauth2
+from uuid import UUID
 
 router = APIRouter(
     prefix="/employees",
@@ -12,7 +14,7 @@ router = APIRouter(
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=EmployeeResponse)
-def create_employee(employee: EmployeeCreate, conn = Depends(get_database)):
+def create_employee(employee: EmployeeCreate, conn = Depends(get_database), current_employee: dict = Depends(oauth2.get_current_user)):
     pass_hash = utils.hash_pass(employee.password) 
     employee.password = pass_hash
 
@@ -26,13 +28,16 @@ def create_employee(employee: EmployeeCreate, conn = Depends(get_database)):
         conn.commit()
 
     if created_employee is None:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail="Employee could not be created.")
 
     return created_employee
 
 @router.get("/{employee_id}", status_code=status.HTTP_200_OK, response_model=EmployeeResponse)
-def show_employee(employee_id: int, conn = Depends(get_database)):
+def show_employee(employee_id: UUID, conn = Depends(get_database), current_employee: dict = Depends(oauth2.get_current_user)):
+    if current_employee['role'] != 'Admin':
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail='You are not authorized to complete this action. You must be Admin.')
     with conn.cursor() as cursor:
 
         cursor.execute("""SELECT * FROM employees WHERE id = %s""", (employee_id,))
@@ -45,7 +50,10 @@ def show_employee(employee_id: int, conn = Depends(get_database)):
     return employee
 
 @router.get("/", status_code=status.HTTP_200_OK, response_model=list[EmployeeResponse])
-def show_employees(conn = Depends(get_database)):
+def show_employees(conn = Depends(get_database), current_employee: dict = Depends(oauth2.get_current_user)):
+    if current_employee['role'] != 'Admin':
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail='You are not authorized to complete this action. You must be an Admin')
     with conn.cursor() as cursor:
 
         cursor.execute("""SELECT id, first_name, last_name, email, role FROM employees""")
@@ -58,7 +66,10 @@ def show_employees(conn = Depends(get_database)):
     return employees
 
 @router.put("/{employee_id}", status_code=status.HTTP_200_OK, response_model=EmployeeResponse)
-def update_employee(employee_id: int, employee: EmployeeUpdate, conn = Depends(get_database)):
+def update_employee(employee_id: UUID, employee: EmployeeUpdate, conn = Depends(get_database), current_employee: dict = Depends(oauth2.get_current_user)):
+    if current_employee['role'] != 'Admin':
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail='You are not authorized to complete this action. Must be an Admin')
     with conn.cursor() as cursor:
 
         cursor.execute("""UPDATE employees SET first_name = %s, last_name = %s, email = %s, role = %s WHERE id = %s RETURNING *""", 
@@ -74,7 +85,11 @@ def update_employee(employee_id: int, employee: EmployeeUpdate, conn = Depends(g
     return updated_employee
 
 @router.delete("/{employee_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_employee(employee_id: int, conn = Depends(get_database)):
+def delete_employee(employee_id: UUID, conn = Depends(get_database), current_employee: dict = Depends(oauth2.get_current_user)):
+    if current_employee['role'] != 'Admin':
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail='You are not authorzied for this action. Must be an Admin')
+    
     with conn.cursor() as cursor:
 
         cursor.execute("""DELETE FROM employees WHERE id = %s RETURNING *""", 
