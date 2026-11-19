@@ -1,12 +1,12 @@
-# Client Log App
+# Client CRM App
 
-This is an internal application for employees to manage client records and for logging client interactions.
+This is an internal CRM application for employees to manage client relationships and for logging client interactions.
 
 ## Project Status
 
 ### 🚧In Development
 
-The application is currently being built. The initial project structure and database design are being developed before implementing the API and the frontend.
+The application is currently being built. The postgres database architecture has been designed and implemented. The fastapi backend endpoints, authentication, authorization, and logging has been implemented and MFA is planned to be integrated soon to improve security. I am now working on the react front end to make the application usable.
 
 ## ⚡️Tech Stack
 
@@ -24,7 +24,7 @@ The application is currently being built. The initial project structure and data
 - Interation types and history
 - Authentication and authorization
 - PostgreSQL database
-- Web-based frontend
+- React frontend
 - Internal deployment
 
 ## Development

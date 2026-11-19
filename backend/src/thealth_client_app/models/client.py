@@ -12,11 +12,10 @@ class ClientCreate(BaseModel):
     phone_number: str
     email: EmailStr
     status: str
-    created_at: date
     parent_info: str
+    event: str
+    signup_date: date
 
 class Client(ClientCreate):
     id: UUID
     employee_id: UUID
-
-    

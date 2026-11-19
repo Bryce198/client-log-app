@@ -25,10 +25,10 @@ def get_clients(conn = Depends(get_database), current_user: TokenData = Depends(
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=Client)
 def add_client(client: ClientCreate, conn = Depends(get_database), current_user: TokenData = Depends(oauth2.get_current_user), current_employee: dict = Depends(oauth2.get_current_user)):
     with conn.cursor() as cursor:
-        cursor.execute("""INSERT INTO clients (first_name, last_name, age, date_of_birth, phone_number, email, status, created_at, parent_info, employee_id)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *""",
+        cursor.execute("""INSERT INTO clients (first_name, last_name, age, date_of_birth, phone_number, email, status, parent_info, employee_id, event, signup_date)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *""",
         (client.first_name, client.last_name, client.age, client.date_of_birth, client.phone_number, client.email,
-        client.status, client.created_at, client.parent_info, current_employee['id']))
+        client.status, client.parent_info, current_employee['id'], client.event, client.signup_date))
 
         new_client = cursor.fetchone()
 
@@ -75,9 +75,9 @@ def update_client(client_id: UUID, client: ClientCreate, conn = Depends(get_data
     with conn.cursor() as cursor:
 
         cursor.execute("""UPDATE clients SET first_name = %s, last_name = %s, age = %s, date_of_birth = %s, phone_number = %s, email = %s,
-        status = %s, created_at = %s, parent_info = %s WHERE id = %s RETURNING *""",
+        status = %s, parent_info = %s, event = %s, signup_date = %s WHERE id = %s RETURNING *""",
         (client.first_name, client.last_name, client.age, client.date_of_birth, client.phone_number,
-        client.email, client.status, client.created_at, client.parent_info, client_id))
+        client.email, client.status, client.parent_info, client.event, client.signup_date, client_id))
 
         updated_client = cursor.fetchone()
 
