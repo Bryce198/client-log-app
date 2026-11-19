@@ -6,10 +6,12 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "fastapi[standard]>=0.141.1",
+    "gunicorn>=27.0.1",
     "psycopg[binary]>=3.3.5",
     "pwdlib[argon2]>=0.3.1",
     "pydantic-settings>=2.15.0",
     "pyjwt>=2.15.1",
+    "uvicorn>=0.52.4",
 ]
 
 [project.scripts]

@@ -4,9 +4,9 @@ This is an internal CRM application for employees to manage client relationships
 
 ## Project Status
 
-### 🚧In Development
+### In development
 
-The application is currently being built. The postgres database architecture has been designed and implemented. The fastapi backend endpoints, authentication, authorization, and logging has been implemented and MFA is planned to be integrated soon to improve security. I am now working on the react front end to make the application usable.
+The PostgreSQL database and FastAPI backend are in place. The React employee portal provides sign-in, a searchable client directory, and client record creation and editing.
 
 ## ⚡️Tech Stack
 
@@ -14,7 +14,7 @@ The application is currently being built. The postgres database architecture has
 - 💨uv
 - ⚡️FastAPI
 - 🐘PostgresSQL
-- 👉🏾React (planned)
+- React
 
 ## Planned Features
 
@@ -24,14 +24,31 @@ The application is currently being built. The postgres database architecture has
 - Interation types and history
 - Authentication and authorization
 - PostgreSQL database
-- React frontend
 - Internal deployment
 
 ## Development
 
 This project uses uv for Python project and dependency management. Create the virtual environment and install dependencies with the command: **uv sync**
 
-Run the application as development features are implemented.
+Run the backend and frontend in separate terminals:
+
+```bash
+./run_app.sh
+```
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The frontend expects the API at `http://localhost:8000` by default. To use a different backend URL, set `VITE_API_URL` before starting Vite, for example:
+
+```bash
+VITE_API_URL=http://localhost:8000 npm run dev
+```
+
+Sign in with an employee account created for your deployment. The portal uses the backend's `/login/` and `/clients/` routes.
 
 ## Security
 
