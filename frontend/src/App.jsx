@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import brandLogo from './assets/Transformation Health Logo.png'
 import './App.css'
 
-const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/$/, '')
+const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
 const TOKEN_KEY = 'thealth_access_token'
 const THEME_KEY = 'thealth_theme'
 const EMPTY_CLIENT = {
