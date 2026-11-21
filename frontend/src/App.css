@@ -96,6 +96,9 @@
 .list-footer strong { color: #637a93; }
 .page-alert { margin: 0 20px 14px; }
 .text-button { padding: 0; color: #2767a2; border: 0; background: none; font-size: 11px; font-weight: 700; text-decoration: underline; }
+.employee-table { min-width: 650px; }
+.employee-actions { display: flex; align-items: center; justify-content: flex-end; gap: 16px; }
+.danger-button { color: #a64e4e; }
 .main-footer { display: flex; justify-content: space-between; gap: 16px; padding: 20px 2px 0; color: #9aa7b5; font-size: 10px; }
 .main-footer span:last-child { display: flex; align-items: center; gap: 5px; }
 
@@ -140,8 +143,8 @@
 .client-form { padding-top: 19px; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 15px; }
 .form-grid label { display: flex; flex-direction: column; gap: 6px; color: #526b85; font-size: 10px; font-weight: 700; }
-.form-grid input { width: 100%; height: 37px; padding: 0 10px; color: #314a65; border: 1px solid #dfe7ef; border-radius: 5px; outline: 0; background: #fff; font-size: 11px; font-weight: 400; }
-.form-grid input:focus { border-color: #8bb9df; box-shadow: 0 0 0 3px #8bb9df20; }
+.form-grid input, .form-grid select { width: 100%; height: 37px; padding: 0 10px; color: #314a65; border: 1px solid #dfe7ef; border-radius: 5px; outline: 0; background: #fff; font-size: 11px; font-weight: 400; }
+.form-grid input:focus, .form-grid select:focus { border-color: #8bb9df; box-shadow: 0 0 0 3px #8bb9df20; }
 .form-grid input::placeholder { color: #aab5c2; }
 .form-span { grid-column: 1 / -1; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); }
@@ -174,7 +177,8 @@
   .sidebar > .brand { padding: 0; }
   .sidebar > .brand .brand-logo { width: 66px; }
   .workspace-label, .nav-item:not(.active), .nav-item.active { font-size: 0; }
-  .nav-item.active { width: 44px; height: 44px; justify-content: center; margin-top: 37px; padding: 0; }
+  .nav-item { width: 44px; height: 44px; justify-content: center; margin-top: 6px; padding: 0; }
+  .nav-item:first-of-type { margin-top: 37px; }
   .nav-count, .sidebar-bottom .privacy-card, .profile-copy, .profile-button > svg { display: none; }
   .profile-button { justify-content: center; padding: 12px 0 0; }
   .topbar { height: 58px; padding: 0 19px; }

@@ -6,7 +6,7 @@ This is an internal CRM application for employees to manage client relationships
 
 ### In development
 
-The PostgreSQL database and FastAPI backend are in place. The React employee portal provides sign-in, a searchable client directory, and client record creation and editing.
+The PostgreSQL database and FastAPI backend are in place. The React employee portal provides sign-in, a searchable client directory, and client record creation and editing. Admin accounts can also manage employee accounts and roles.
 
 ## ⚡️Tech Stack
 

@@ -52,7 +52,7 @@ def get_client(client_id: UUID, conn = Depends(get_database), current_user: Toke
 
 @router.delete("/{client_id}", status_code=status.HTTP_204_NO_CONTENT)
 def remove_client(client_id: UUID, conn = Depends(get_database), current_user: TokenData = Depends(oauth2.get_current_user), current_employee: dict = Depends(oauth2.get_current_user)):
-    if current_employee['id'] != 'Admin':
+    if current_employee['role'] != 'Admin':
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail='You are are not authorized to complete this action. Must be an Admin.')
     

@@ -15,6 +15,10 @@ router = APIRouter(
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=EmployeeResponse)
 def create_employee(employee: EmployeeCreate, conn = Depends(get_database), current_employee: dict = Depends(oauth2.get_current_user)):
+    if current_employee['role'] != 'Admin':
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail='You are not authorized to complete this action. You must be Admin.')
+
     pass_hash = utils.hash_pass(employee.password) 
     employee.password = pass_hash
 
@@ -95,6 +99,8 @@ def delete_employee(employee_id: UUID, conn = Depends(get_database), current_emp
         cursor.execute("""DELETE FROM employees WHERE id = %s RETURNING *""", 
                    (employee_id,))
         employee = cursor.fetchone()
+        if employee is not None:
+            conn.commit()
 
     if employee is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 

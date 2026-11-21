@@ -16,6 +16,13 @@ const EMPTY_CLIENT = {
   event: '',
   signup_date: new Date().toISOString().slice(0, 10),
 }
+const EMPTY_EMPLOYEE = {
+  first_name: '',
+  last_name: '',
+  email: '',
+  role: 'Employee',
+  password: '',
+}
 
 function Icon({ name, size = 20 }) {
   const paths = {
@@ -172,6 +179,45 @@ function ClientForm({ client, onClose, onSave, saving, error }) {
   )
 }
 
+function EmployeeForm({ employee, onClose, onSave, saving, error }) {
+  const [values, setValues] = useState(employee || EMPTY_EMPLOYEE)
+  const editing = Boolean(employee?.id)
+
+  function updateField(event) {
+    setValues((current) => ({ ...current, [event.target.name]: event.target.value }))
+  }
+
+  function submit(event) {
+    event.preventDefault()
+    onSave(values)
+  }
+
+  return (
+    <div className="modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <section className="client-modal" role="dialog" aria-modal="true" aria-labelledby="employee-form-title">
+        <header className="modal-header">
+          <div><p className="eyebrow">{editing ? 'EMPLOYEE ACCOUNT' : 'NEW ACCOUNT'}</p><h2 id="employee-form-title">{editing ? 'Edit employee' : 'Add an employee'}</h2></div>
+          <button className="icon-button" type="button" onClick={onClose} aria-label="Close"><Icon name="close" /></button>
+        </header>
+        {error && <div className="alert alert-error" role="alert">{error}</div>}
+        <form className="client-form" onSubmit={submit}>
+          <div className="form-grid">
+            <label>First name<input name="first_name" value={values.first_name} onChange={updateField} autoComplete="given-name" required /></label>
+            <label>Last name<input name="last_name" value={values.last_name} onChange={updateField} autoComplete="family-name" required /></label>
+            <label className="form-span">Work email<input name="email" type="email" value={values.email} onChange={updateField} autoComplete="email" required /></label>
+            <label>Role<select name="role" value={values.role} onChange={updateField}><option>Employee</option><option>Admin</option></select></label>
+            {!editing && <label>Temporary password<input name="password" type="password" value={values.password} onChange={updateField} autoComplete="new-password" minLength="8" required /></label>}
+          </div>
+          <div className="modal-actions">
+            <button className="button button-secondary" type="button" onClick={onClose}>Cancel</button>
+            <button className="button button-primary" type="submit" disabled={saving}>{saving ? 'Saving…' : editing ? 'Save changes' : 'Add employee'}</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  )
+}
+
 function ClientDetails({ client, onClose, onEdit }) {
   return (
     <div className="modal-backdrop detail-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
@@ -207,12 +253,19 @@ function Detail({ icon, label, value }) {
 function App() {
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY))
   const [clients, setClients] = useState([])
+  const [employees, setEmployees] = useState([])
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [activePage, setActivePage] = useState('clients')
   const [loading, setLoading] = useState(Boolean(localStorage.getItem(TOKEN_KEY)))
+  const [employeeLoading, setEmployeeLoading] = useState(false)
   const [pageError, setPageError] = useState('')
+  const [employeeError, setEmployeeError] = useState('')
   const [search, setSearch] = useState('')
+  const [employeeSearch, setEmployeeSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All clients')
   const [selectedClient, setSelectedClient] = useState(null)
   const [formClient, setFormClient] = useState(null)
+  const [formEmployee, setFormEmployee] = useState(null)
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -220,8 +273,12 @@ function App() {
     localStorage.removeItem(TOKEN_KEY)
     setToken(null)
     setClients([])
+    setEmployees([])
+    setIsAdmin(false)
+    setActivePage('clients')
     setSelectedClient(null)
     setFormClient(null)
+    setFormEmployee(null)
   }, [])
 
   const request = useCallback(async (path, options = {}) => {
@@ -260,6 +317,26 @@ function App() {
     }
   }, [request, signOut])
 
+  const loadEmployees = useCallback(async () => {
+    setEmployeeLoading(true)
+    setEmployeeError('')
+    try {
+      const data = await request('/employees/')
+      setEmployees(Array.isArray(data) ? data : [])
+      setIsAdmin(true)
+    } catch (error) {
+      if (error.status === 401) signOut()
+      else if (error.status === 403) {
+        setIsAdmin(false)
+        setEmployees([])
+      } else {
+        setEmployeeError(error.message)
+      }
+    } finally {
+      setEmployeeLoading(false)
+    }
+  }, [request, signOut])
+
   useEffect(() => {
     if (!token) return
     request('/clients/')
@@ -269,7 +346,8 @@ function App() {
         setPageError(error.message)
       })
       .finally(() => setLoading(false))
-  }, [token, request, signOut])
+    void Promise.resolve().then(loadEmployees)
+  }, [token, request, signOut, loadEmployees])
 
   async function login(email, password) {
     const body = new URLSearchParams({ username: email, password })
@@ -314,6 +392,39 @@ function App() {
     }
   }
 
+  async function saveEmployee(values) {
+    setSaving(true)
+    setFormError('')
+    const editing = Boolean(formEmployee?.id)
+    try {
+      const saved = await request(editing ? `/employees/${formEmployee.id}` : '/employees/', {
+        method: editing ? 'PUT' : 'POST',
+        body: JSON.stringify(editing ? { ...values, id: formEmployee.id } : values),
+      })
+      setEmployees((current) => editing
+        ? current.map((employee) => employee.id === saved.id ? saved : employee)
+        : [...current, saved])
+      setFormEmployee(null)
+    } catch (error) {
+      if (error.status === 401) signOut()
+      else setFormError(error.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function deleteEmployee(employee) {
+    if (!window.confirm(`Remove ${employee.first_name} ${employee.last_name} from the employee directory?`)) return
+    setEmployeeError('')
+    try {
+      await request(`/employees/${employee.id}`, { method: 'DELETE' })
+      setEmployees((current) => current.filter((item) => item.id !== employee.id))
+    } catch (error) {
+      if (error.status === 401) signOut()
+      else setEmployeeError(error.message)
+    }
+  }
+
   const activeCount = clients.filter((client) => client.status?.toLowerCase().includes('active') && !client.status?.toLowerCase().includes('inactive')).length
   const followupCount = clients.filter((client) => client.status?.toLowerCase().includes('follow')).length
   const filteredClients = useMemo(() => {
@@ -325,15 +436,26 @@ function App() {
       ].some((value) => String(value || '').toLowerCase().includes(query)))
       .sort((a, b) => String(b.signup_date || '').localeCompare(String(a.signup_date || '')))
   }, [clients, search, statusFilter])
+  const filteredEmployees = useMemo(() => {
+    const query = employeeSearch.trim().toLowerCase()
+    return employees
+      .filter((employee) => !query || [
+        employee.first_name, employee.last_name, employee.email, employee.role,
+      ].some((value) => String(value || '').toLowerCase().includes(query)))
+      .sort((a, b) => `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`))
+  }, [employees, employeeSearch])
 
   if (!token) return <Login onLogin={login} />
+
+  const pageTitle = activePage === 'employees' ? 'Employees' : 'Clients'
 
   return (
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand"><img className="brand-logo" src={brandLogo} alt="Transformation Health" /></div>
         <div className="workspace-label">WORKSPACE</div>
-        <button className="nav-item active"><Icon name="clients" size={19} /> Clients <span className="nav-count">{clients.length}</span></button>
+        <button className={`nav-item ${activePage === 'clients' ? 'active' : ''}`} onClick={() => setActivePage('clients')}><Icon name="clients" size={19} /> Clients <span className="nav-count">{clients.length}</span></button>
+        {isAdmin && <button className={`nav-item ${activePage === 'employees' ? 'active' : ''}`} onClick={() => setActivePage('employees')}><Icon name="user" size={19} /> Employees <span className="nav-count">{employees.length}</span></button>}
         <div className="sidebar-bottom">
           <div className="privacy-card"><span className="privacy-icon"><Icon name="shield" size={18} /></span><div><strong>Private workspace</strong><p>For authorized employees only</p></div></div>
           <button className="profile-button" onClick={signOut}>
@@ -346,11 +468,49 @@ function App() {
 
       <main className="main-content">
         <header className="topbar">
-          <div className="breadcrumbs">Workspace <Icon name="chevron" size={15} /> <strong>Clients</strong></div>
-          <div className="topbar-right"><span className="secure-label"><Icon name="shield" size={15} /> Employee portal</span><button className="mobile-logout" onClick={signOut} aria-label="Sign out"><Icon name="logout" /></button></div>
+          <div className="breadcrumbs">Workspace <Icon name="chevron" size={15} /> <strong>{pageTitle}</strong></div>
+          <div className="topbar-right"><span className="secure-label"><Icon name="shield" size={15} /> {isAdmin ? 'Admin portal' : 'Employee portal'}</span><button className="mobile-logout" onClick={signOut} aria-label="Sign out"><Icon name="logout" /></button></div>
         </header>
 
-        <div className="page-content">
+        {activePage === 'employees' && isAdmin ? (
+          <div className="page-content">
+            <div className="page-heading">
+              <div><p className="eyebrow">TEAM ACCESS</p><h1>Employees</h1><p className="page-subtitle">Manage the people who can sign in to your workspace.</p></div>
+              <button className="button button-primary add-button" onClick={() => { setFormError(''); setFormEmployee({ ...EMPTY_EMPLOYEE }) }}><Icon name="plus" size={18} /> Add employee</button>
+            </div>
+
+            <section className="stats-grid" aria-label="Employee overview">
+              <article className="stat-card"><div className="stat-icon blue"><Icon name="clients" /></div><div><span>Total employees</span><strong>{employees.length}</strong></div><small>Workspace accounts</small></article>
+              <article className="stat-card"><div className="stat-icon green"><Icon name="shield" /></div><div><span>Administrators</span><strong>{employees.filter((employee) => employee.role === 'Admin').length}</strong></div><small>Can manage team access</small></article>
+              <article className="stat-card"><div className="stat-icon amber"><Icon name="user" /></div><div><span>Employees</span><strong>{employees.filter((employee) => employee.role !== 'Admin').length}</strong></div><small>Standard access</small></article>
+            </section>
+
+            <section className="clients-card">
+              <div className="list-heading">
+                <div><h2>Employee directory</h2><p>Manage account details and access levels</p></div>
+                <div className="list-controls"><label className="search-box"><Icon name="search" size={18} /><input value={employeeSearch} onChange={(event) => setEmployeeSearch(event.target.value)} placeholder="Search employees…" aria-label="Search employees" /></label></div>
+              </div>
+              {employeeError && <div className="alert alert-error page-alert" role="alert"><span>{employeeError}</span><button className="text-button" onClick={loadEmployees}>Try again</button></div>}
+              <div className="client-table-wrap">
+                <table className="client-table employee-table">
+                  <thead><tr><th>EMPLOYEE</th><th>EMAIL</th><th>ROLE</th><th><span className="sr-only">Actions</span></th></tr></thead>
+                  <tbody>
+                    {employeeLoading ? <tr><td className="table-state" colSpan="4"><span className="spinner" /> Loading employee records…</td></tr>
+                      : filteredEmployees.length === 0 ? <tr><td className="table-state" colSpan="4"><div className="empty-icon"><Icon name="user" size={22} /></div><strong>{employees.length === 0 ? 'No employee records yet' : 'No matching employees'}</strong><p>{employees.length === 0 ? 'Add an employee to get started with your directory.' : 'Try a different search.'}</p>{employees.length === 0 && <button className="button button-primary empty-add" onClick={() => { setFormError(''); setFormEmployee({ ...EMPTY_EMPLOYEE }) }}><Icon name="plus" size={17} /> Add employee</button>}</td></tr>
+                      : filteredEmployees.map((employee) => <tr key={employee.id}>
+                        <td><div className="client-cell"><span className="client-avatar">{employee.first_name?.[0]}{employee.last_name?.[0]}</span><span><strong>{employee.first_name} {employee.last_name}</strong><small>Team account</small></span></div></td>
+                        <td className="muted-cell">{employee.email}</td>
+                        <td><span className="status-pill status-neutral">{employee.role}</span></td>
+                        <td><div className="employee-actions"><button className="text-button" onClick={() => { setFormError(''); setFormEmployee(employee) }}>Edit</button><button className="text-button danger-button" onClick={() => deleteEmployee(employee)}>Remove</button></div></td>
+                      </tr>)}
+                  </tbody>
+                </table>
+              </div>
+              {!employeeLoading && filteredEmployees.length > 0 && <div className="list-footer">Showing <strong>{filteredEmployees.length}</strong> of <strong>{employees.length}</strong> employee records</div>}
+            </section>
+            <footer className="main-footer"><span>Transformation Health · Admin workspace</span><span><Icon name="shield" size={14} /> Manage employee access with care</span></footer>
+          </div>
+        ) : <div className="page-content">
           <div className="page-heading">
             <div><p className="eyebrow">CLIENT RELATIONSHIPS</p><h1>Clients</h1><p className="page-subtitle">A clear view of the people and relationships your team supports.</p></div>
             <button className="button button-primary add-button" onClick={() => { setFormError(''); setFormClient({ ...EMPTY_CLIENT }) }}><Icon name="plus" size={18} /> Add client</button>
@@ -394,10 +554,11 @@ function App() {
             {!loading && filteredClients.length > 0 && <div className="list-footer">Showing <strong>{filteredClients.length}</strong> of <strong>{clients.length}</strong> client records</div>}
           </section>
           <footer className="main-footer"><span>Transformation Health · Outreach workspace</span><span><Icon name="shield" size={14} /> Handle client information with care</span></footer>
-        </div>
+        </div>}
       </main>
       {selectedClient && <ClientDetails client={selectedClient} onClose={() => setSelectedClient(null)} onEdit={() => { setFormError(''); setFormClient(selectedClient); setSelectedClient(null) }} />}
       {formClient && <ClientForm client={formClient} onClose={() => setFormClient(null)} onSave={saveClient} saving={saving} error={formError} />}
+      {formEmployee && <EmployeeForm employee={formEmployee} onClose={() => setFormEmployee(null)} onSave={saveEmployee} saving={saving} error={formError} />}
     </div>
   )
 }
